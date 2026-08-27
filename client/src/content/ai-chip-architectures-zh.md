@@ -12,26 +12,26 @@
 
 有必要出现领域专用架构（DSAs）。他们的示例工作是 Google 的 TPU v1，已经在生产中：在神经网络推理上比 CPU 提供 29× 的吞吐量，能效提升 80×。他们的结论预测是：“下一个十年将见证计算机架构的寒武纪式爆发。”
 
-这个预测成真了。今天，我们有数十种架构在认真开发中。GPUs、TPUs、LPUs、NPUs、DPUs、ASICs、wafer-scale engines、reconfigurable dataflow、neuromorphic、photonic、analog。特别是，这些架构关注于 AI 的计算。
+这个预测成真了。今天，有数十种架构正在积极开发：GPU、TPU、LPU、NPU、DPU、ASIC、晶圆级引擎（wafer-scale engines）、可重构数据流（reconfigurable dataflow）、神经形态（neuromorphic）、光子（photonic）与模拟计算（analog）。它们尤其聚焦于 AI 计算。
 
-到目前为止真正部署并取得胜利的架构有：GPUs (NVIDIA, AMD)、systolic-array accelerators (TPU, Trainium)、Cerebras Wafer-Scale Engine，以及 Groq LPU。
+到目前为止，真正实现部署并取得成效的架构包括：GPU（NVIDIA、AMD）、脉动阵列加速器（systolic-array accelerators；TPU、Trainium）、Cerebras 晶圆级引擎（Wafer-Scale Engine），以及 Groq LPU。
 
-NVIDIA 是明显的领跑者；AMD 紧随其后，OpenAI 和 Meta 对两者都有 6 GW 的承诺。TPUs 训练 Gemini 并将为 Anthropic 提供服务，规模可达一百万片芯片；Anthropic 也在超过一百万个 Trainium 芯片上运行 Claude。Cerebras 现在为 OpenAI 提供推理服务；Groq LPU 通过一次 200 亿美元的 acquihire 被并入 NVIDIA。
+NVIDIA 是明显的领跑者；AMD 紧随其后，OpenAI 和 Meta 均已对两者作出 6 GW 规模的部署承诺。TPU 用于训练 Gemini，并将以多达一百万颗芯片的规模为 Anthropic 提供服务；Anthropic 也在超过一百万颗 Trainium 芯片上运行 Claude。Cerebras 目前为 OpenAI 提供推理服务；Groq LPU 则通过一笔 200 亿美元、以吸纳团队为目的的收购（acquihire）并入 NVIDIA。
 
 本文旨在调查这些不同的方法——它们的理念、架构、扩展方法（纵向扩展和横向扩展），以及软件 栈（如何为芯片编程）。
 
 问题所在
 
-AI 计算由 矩阵乘法 主导。一个 transformer 是一系列的 matmuls：Q/K/V 投影、attention、输出投影、FFN——与逐元素操作交错：normalisation、activation、residual adds。训练一个前沿模型会执行
+AI 计算由矩阵乘法主导。一个 Transformer 由一系列矩阵乘法（matmul）组成：Q/K/V 投影、注意力（attention）、输出投影与前馈网络（FFN）；其间穿插归一化（normalisation）、激活（activation）和残差相加（residual add）等逐元素操作。训练一个前沿模型会执行
 10
 25
 10
 25
  乘-加 操作（矩阵乘法是乘-加操作的序列）。
 
-这些 matmuls 的形状取决于工作负载。训练将一批序列向前通过每一层，反向传播损失，并更新权重，成千上万的 tokens 同时流经同一权重矩阵。Prefill 是推理的提示摄取阶段：完整的输入序列在第一个输出 token 产生之前一次性投影通过模型。训练和 prefill 都将许多 tokens 堆叠到同一个权重矩阵上，所以每层的数学运算是大型的矩阵-矩阵乘法（GEMM），具有高算术强度（受计算约束）。Decode 是自回归的：模型一次发出一个 token，每个 token 都以之前的所有 token 为条件，token N+1 必须等到 token N 产生之后才能开始。每步只投影一个 token，因此每个 matmul 变成矩阵-向量乘（GEMV）。生成一个 token 需要对模型中的每个权重完成一次完整遍历，并且还要完整读取 attention 的 KV Cache。与 prefill 相比，算术强度下降几个数量级。
+这些矩阵乘法的形状取决于工作负载。训练会将一批序列前向通过每一层、反向传播损失并更新权重，成千上万个令牌（token）同时流经同一权重矩阵。预填充（prefill）是推理中的提示词摄取阶段：完整输入序列会在第一个输出令牌产生前一次性投影通过模型。训练和预填充都会将许多令牌堆叠到同一个权重矩阵上，因此每层的数学运算是具有高算术强度、受计算约束的大型矩阵—矩阵乘法（GEMM）。解码（decode）则是自回归的：模型每次输出一个令牌，每个令牌都以前序所有令牌为条件，令牌 N+1 必须等到令牌 N 生成后才能开始。每一步只投影一个令牌，因此每次矩阵乘法会变成矩阵—向量乘法（GEMV）。生成一个令牌需要完整遍历模型中的每个权重，并完整读取注意力机制的 KV 缓存（KV Cache）。与预填充相比，算术强度会下降几个数量级。
 
-推理系统通过批处理 token 来恢复部分强度，将这些 GEMV 提升回 GEMM：continuous batching 将许多用户的 decode 步骤堆叠，speculative decoding 为每个请求草稿 K 个 token 并在一次通过中验证它们，multi-token prediction 将同样的技巧折叠在模型内部。这提高了矩阵乘法单元的利用率，并推动每字节操作数（Ops/B）上升。对于 continuous batching，每个用户的请求仍然读取其自己的 KV Cache，因此长上下文 decode 从受权重带宽限制转向受 KV 带宽限制。
+推理系统通过批处理令牌来恢复部分算术强度，并将这些 GEMV 提升回 GEMM：连续批处理（continuous batching）将许多用户的解码步骤堆叠；推测解码（speculative decoding）为每个请求草拟 K 个令牌并在一次前向传播中验证；多令牌预测（multi-token prediction）则将同一思路内置于模型。这会提高矩阵乘法单元的利用率，并提升每字节操作数（Ops/B）。在连续批处理中，每位用户仍需读取自己的 KV 缓存，因此长上下文解码会从受权重带宽限制转向受 KV 缓存带宽限制。
 
 这里的架构问题是要足够快地把数据移动到矩阵乘法发生的地方。这就是所谓的 内存墙：计算 呈指数增长，而 内存 带宽没有。
 

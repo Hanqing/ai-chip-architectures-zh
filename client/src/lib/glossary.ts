@@ -26,4 +26,8 @@ export const glossary: GlossaryItem[] = [
   { term: "稀疏性", english: "Sparsity", definition: "数据或权重中大量数值为零的特性，可用于减少计算和数据传输。" },
   { term: "DMA", english: "DMA", definition: "直接内存访问引擎，可在无需核心逐指令参与的情况下搬运数据。" },
   { term: "片上 SRAM", english: "On-chip SRAM", definition: "集成在芯片上的静态随机存取存储器，容量较小但延迟极低、带宽很高。" },
+  { term: "硬件仿真", english: "Emulation", definition: "将 RTL 映射到专用硬件执行，以比软件仿真更快的速度运行系统级工作负载。" },
+  { term: "逻辑综合", english: "Synthesis", definition: "将 RTL 描述转换为满足时序、面积和功耗约束的门级网表的自动化过程。" },
+  { term: "时序收敛", english: "Timing closure", definition: "反复优化逻辑、布局布线与约束，使所有关键路径满足目标时钟周期的过程。" },
+  { term: "上电调试", english: "Bring-up", definition: "首片硅返回后启动硬件、固件和驱动并定位软硬件问题的验证阶段。" },
 ];
