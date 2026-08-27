@@ -9,6 +9,7 @@ import articleMarkdownEn from "@/content/ai-chip-architectures-en.md?raw";
 import articleMarkdown from "@/content/ai-chip-architectures-zh.md?raw";
 import { useTheme } from "@/contexts/ThemeContext";
 import { glossary } from "@/lib/glossary";
+import { sitePath } from "@/lib/sitePath";
 
 type TocItem = {
   id: string;
@@ -26,37 +27,40 @@ type FigureSpec = {
 
 type Language = "zh" | "en";
 
+const isGitHubPages = import.meta.env.VITE_GITHUB_PAGES === "true";
+const githubMedia = (name: string) => `${import.meta.env.BASE_URL}media/${name}`;
+
 const ASSETS = {
-  nvidia: "/manus-storage/nvidia-gpu-die_0861949d.png",
-  nvidiaSm: "/manus-storage/nvidia-sm_ad087be0.png",
-  nvidiaScaleUp: "/manus-storage/nvidia-scale-up_048229b3.png",
-  nvidiaScaleOut: "/manus-storage/nvidia-scale-out_a76b43ad.png",
-  tpu: "/manus-storage/google-tpu-chip_e2f903f7.png",
-  tpuCore: "/manus-storage/google-tpu-tensorcore_81f5d8b8.png",
-  tpuScaleUp: "/manus-storage/google-tpu-scale-up_d24d2673.png",
-  tpuScaleOut: "/manus-storage/google-tpu-scale-out_0d3a0b09.png",
-  amd: "/manus-storage/amd-gpu-chip_96f6b02c.png",
-  amdCu: "/manus-storage/amd-cu_ef44cf4b.png",
-  amdScaleUp: "/manus-storage/amd-scale-up_0e150a1d.png",
-  amdScaleOut: "/manus-storage/amd-scale-out_1ecf8498.png",
-  cerebras: "/manus-storage/cerebras-wafer-die_5232501d.png",
-  cerebrasCore: "/manus-storage/cerebras-core_fa8f6476.png",
-  trainium: "/manus-storage/aws-trainium-chip_c5e0f2bc.png",
-  trainiumCore: "/manus-storage/aws-trainium-neuroncore_34245212.png",
-  trainiumScaleUp: "/manus-storage/aws-trainium-scale-up_e3ecf526.png",
-  trainiumScaleOut: "/manus-storage/aws-trainium-scale-out_83924b55.png",
-  groq: "/manus-storage/groq-chip_0fee2536.png",
-  groqScale: "/manus-storage/groq-scale_e52c13f3.png",
-  standardMachines: "/manus-storage/standard_machines_mark_d9bc5ffb.png",
+  nvidia: isGitHubPages ? githubMedia("nvidia-gpu-die.png") : "/manus-storage/nvidia-gpu-die_0861949d.png",
+  nvidiaSm: isGitHubPages ? githubMedia("nvidia-sm.png") : "/manus-storage/nvidia-sm_ad087be0.png",
+  nvidiaScaleUp: isGitHubPages ? githubMedia("nvidia-scale-up.png") : "/manus-storage/nvidia-scale-up_048229b3.png",
+  nvidiaScaleOut: isGitHubPages ? githubMedia("nvidia-scale-out.png") : "/manus-storage/nvidia-scale-out_a76b43ad.png",
+  tpu: isGitHubPages ? githubMedia("google-tpu-chip.png") : "/manus-storage/google-tpu-chip_e2f903f7.png",
+  tpuCore: isGitHubPages ? githubMedia("google-tpu-tensorcore.png") : "/manus-storage/google-tpu-tensorcore_81f5d8b8.png",
+  tpuScaleUp: isGitHubPages ? githubMedia("google-tpu-scale-up.png") : "/manus-storage/google-tpu-scale-up_d24d2673.png",
+  tpuScaleOut: isGitHubPages ? githubMedia("google-tpu-scale-out.png") : "/manus-storage/google-tpu-scale-out_0d3a0b09.png",
+  amd: isGitHubPages ? githubMedia("amd-gpu-chip.png") : "/manus-storage/amd-gpu-chip_96f6b02c.png",
+  amdCu: isGitHubPages ? githubMedia("amd-cu.png") : "/manus-storage/amd-cu_ef44cf4b.png",
+  amdScaleUp: isGitHubPages ? githubMedia("amd-scale-up.png") : "/manus-storage/amd-scale-up_0e150a1d.png",
+  amdScaleOut: isGitHubPages ? githubMedia("amd-scale-out.png") : "/manus-storage/amd-scale-out_1ecf8498.png",
+  cerebras: isGitHubPages ? githubMedia("cerebras-wafer-die.png") : "/manus-storage/cerebras-wafer-die_5232501d.png",
+  cerebrasCore: isGitHubPages ? githubMedia("cerebras-core.png") : "/manus-storage/cerebras-core_fa8f6476.png",
+  trainium: isGitHubPages ? githubMedia("aws-trainium-chip.png") : "/manus-storage/aws-trainium-chip_c5e0f2bc.png",
+  trainiumCore: isGitHubPages ? githubMedia("aws-trainium-neuroncore.png") : "/manus-storage/aws-trainium-neuroncore_34245212.png",
+  trainiumScaleUp: isGitHubPages ? githubMedia("aws-trainium-scale-up.png") : "/manus-storage/aws-trainium-scale-up_e3ecf526.png",
+  trainiumScaleOut: isGitHubPages ? githubMedia("aws-trainium-scale-out.png") : "/manus-storage/aws-trainium-scale-out_83924b55.png",
+  groq: isGitHubPages ? githubMedia("groq-chip.png") : "/manus-storage/groq-chip_0fee2536.png",
+  groqScale: isGitHubPages ? githubMedia("groq-scale.png") : "/manus-storage/groq-scale_e52c13f3.png",
+  standardMachines: isGitHubPages ? githubMedia("standard_machines_mark.png") : "/manus-storage/standard_machines_mark_d9bc5ffb.png",
 };
 
 const BRAND_ASSETS = {
-  nvidia: "/manus-storage/nvidia_4c2aa9e4.png",
-  google: "/manus-storage/google_f1207df7.png",
+  nvidia: isGitHubPages ? githubMedia("nvidia.png") : "/manus-storage/nvidia_4c2aa9e4.png",
+  google: isGitHubPages ? githubMedia("google.png") : "/manus-storage/google_f1207df7.png",
   amd: "https://www.amd.com/content/dam/code/images/favicon/favicon.ico",
-  cerebras: "/manus-storage/cerebras_ebdf0bec.svg",
-  aws: "/manus-storage/aws_b1580405.png",
-  groq: "/manus-storage/groq_026160d1.png",
+  cerebras: isGitHubPages ? githubMedia("cerebras.svg") : "/manus-storage/cerebras_ebdf0bec.svg",
+  aws: isGitHubPages ? githubMedia("aws.png") : "/manus-storage/aws_b1580405.png",
+  groq: isGitHubPages ? githubMedia("groq.png") : "/manus-storage/groq_026160d1.png",
 };
 
 const tocItems: TocItem[] = [
@@ -501,8 +505,8 @@ export default function Home() {
       <div className="layout">
         <nav className="sidebar" aria-label="网站和文章目录">
           <div className="sidebar-section">
-            <a className="sidebar-link" href="/">Home</a>
-            <a className="sidebar-link" href="https://www.jacobpeake.com/writing" target="_blank" rel="noreferrer">Writing</a>
+            <a className="sidebar-link" href={sitePath("/")}>Home</a>
+            <a className="sidebar-link" href={sitePath("/writing")}>Writing</a>
           </div>
           <div className="sidebar-social" aria-label="社交链接">
             <a href="https://github.com/jacobpeake" target="_blank" rel="noreferrer" aria-label="GitHub"><Github /></a>
