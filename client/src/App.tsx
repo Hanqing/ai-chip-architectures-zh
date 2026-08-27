@@ -11,9 +11,10 @@ import Writing from "./pages/Writing";
 
 function AppRouter() {
   return (
-    <Router base={import.meta.env.BASE_URL}>
+    <Router base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
       <Switch>
         <Route path={"/"} component={Home} />
+        <Route path={"/index.html"} component={Home} />
         <Route path={"/writing"} component={Writing} />
         <Route path={"/principles-of-computer-architecture"} component={AdditionalArticle} />
         <Route path={"/how-to-design-a-chip"} component={AdditionalArticle} />
