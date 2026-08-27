@@ -18,17 +18,14 @@ function Router() {
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
+// 原站复刻：通过模板的主题上下文同步正文、目录、表格与图形的浅/深色状态。
 
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider
         defaultTheme="light"
-        // switchable
+        switchable
       >
         <TooltipProvider>
           <Toaster />
