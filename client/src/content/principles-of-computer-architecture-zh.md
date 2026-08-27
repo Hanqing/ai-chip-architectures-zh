@@ -232,7 +232,7 @@ GEMM (I ≈ 2,731)
 性能 (TFLOP/s, log)
 性能 (TFLOP/s, log)
 
-Modern AI rooflines (dense FP8):
+现代 AI 屋顶线（稠密 FP8）：
 
 H100 SXM5: 1,979 TF/s, 3.35 TB/s. 
 𝐼
@@ -765,7 +765,7 @@ p
 
 ≈0.03, 延迟 ≈ 20 cycles → 增加 ~0.12 每条指令周期 (CPI).
 
-Predictor evolution:
+预测器演进：
 
 两级 (Two-level) (Yeh & Patt 1991): 局部 + 全局 历史.
 感知器 (Perceptron) (Jiménez & Lin, HPCA 2001): 用于 AMD Zen.
@@ -822,7 +822,7 @@ Energy and Data Movement
 
 THE HOROWITZ ENERGY TABLE
 
-Measured at 45 nm CMOS.
+在 45 nm CMOS 工艺下测得。
 
 操作	能量
 8 位整数加法 (8-bit int ADD)	0.03 pJ

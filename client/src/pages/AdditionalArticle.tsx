@@ -20,6 +20,12 @@ type ArticleId = "principles" | "chip-design" | "learning";
 type MarkdownBlock = { type: "heading" | "paragraph" | "list" | "code" | "table" | "rule"; value: string; level?: number; id?: string };
 
 const PLAIN_HEADINGS: Record<string, { zh: string; en: string; level: number }> = {
+  "The Performance Equations": { zh: "性能方程", en: "The Performance Equations", level: 2 },
+  "THE IRON LAW": { zh: "性能铁律", en: "THE IRON LAW", level: 3 },
+  "AMDAHL'S LAW": { zh: "阿姆达尔定律", en: "AMDAHL'S LAW", level: 3 },
+  "GUSTAFSON'S LAW": { zh: "古斯塔夫森定律", en: "GUSTAFSON'S LAW", level: 3 },
+  "LITTLE'S LAW": { zh: "利特尔定律", en: "LITTLE'S LAW", level: 3 },
+  "THE ROOFLINE MODEL": { zh: "屋顶线模型", en: "THE ROOFLINE MODEL", level: 3 },
   "The Walls": { zh: "性能之墙", en: "The Walls", level: 2 },
   "THE END OF DENNARD SCALING": { zh: "丹纳德缩放的终结", en: "THE END OF DENNARD SCALING", level: 3 },
   "THE POWER WALL": { zh: "功耗墙", en: "THE POWER WALL", level: 3 },
@@ -62,23 +68,50 @@ const PLAIN_HEADINGS: Record<string, { zh: string; en: string; level: number }> 
   "Microarchitecture": { zh: "微体系结构", en: "Microarchitecture", level: 2 },
   "ITERATION": { zh: "迭代", en: "ITERATION", level: 3 },
   "THE INTERACTIONS": { zh: "协作关系", en: "THE INTERACTIONS", level: 3 },
+  "ITERATION (Chinese)": { zh: "迭代（ITERATION）", en: "ITERATION", level: 3 },
+  "INTERACTIONS (Chinese)": { zh: "交互（THE INTERACTIONS）", en: "THE INTERACTIONS", level: 3 },
+  "Microarchitecture (Chinese)": { zh: "微架构（Microarchitecture）", en: "Microarchitecture", level: 2 },
   "RTL (Register-Transfer Level)": { zh: "RTL（寄存器传输级）", en: "RTL (Register-Transfer Level)", level: 2 },
+  "RTL": { zh: "RTL（寄存器传输级）", en: "RTL", level: 2 },
   "Spatial, Not Sequential": { zh: "空间，而非顺序", en: "Spatial, Not Sequential", level: 3 },
+  "Spatial, Not Sequential (Chinese)": { zh: "空间性，而非顺序性", en: "Spatial, Not Sequential", level: 3 },
   "What the Designer Decides, What the Tools Decide": { zh: "设计师决定什么，工具决定什么", en: "What the Designer Decides, What the Tools Decide", level: 3 },
+  "Designer and Tools (Chinese)": { zh: "设计者决定的事项，工具决定的事项", en: "What the Designer Decides, What the Tools Decide", level: 3 },
   "Finite State Machines": { zh: "有限状态机", en: "Finite State Machines", level: 3 },
   "Example": { zh: "示例", en: "Example", level: 3 },
+  "An Example": { zh: "示例", en: "An Example", level: 3 },
   "THE SYNTHESIS CONTRACT": { zh: "综合契约", en: "THE SYNTHESIS CONTRACT", level: 3 },
   "The Gate-Level Netlist": { zh: "门级网表", en: "The Gate-Level Netlist", level: 3 },
   "Physical Design": { zh: "物理设计", en: "Physical Design", level: 2 },
   "Floorplanning": { zh: "平面规划", en: "Floorplanning", level: 3 },
+  "Floorplan": { zh: "平面规划", en: "Floorplan", level: 3 },
   "Placement": { zh: "布局", en: "Placement", level: 3 },
   "Clock Tree Synthesis": { zh: "时钟树综合", en: "Clock Tree Synthesis", level: 3 },
   "Routing": { zh: "布线", en: "Routing", level: 3 },
   "Signoff": { zh: "签核", en: "Signoff", level: 3 },
+  "The Verification Engineer": { zh: "验证工程师", en: "The Verification Engineer", level: 3 },
   "Foundry & Fabrication": { zh: "代工与制造", en: "Foundry & Fabrication", level: 2 },
   "Bring-up": { zh: "启动与调试", en: "Bring-up", level: 2 },
   "PRE-SILICON: SOFTWARE AGAINST THE MODEL": { zh: "硅前：软件面向模型开发", en: "PRE-SILICON: SOFTWARE AGAINST THE MODEL", level: 3 },
   "POST-SILICON: FIRST BOOT": { zh: "硅后：首次启动", en: "POST-SILICON: FIRST BOOT", level: 3 },
+  "Design Verification": { zh: "设计验证", en: "Design Verification", level: 2 },
+  "UVM": { zh: "UVM 验证方法学", en: "UVM", level: 3 },
+  "CONSTRAINED RANDOM + COVERAGE": { zh: "约束随机与覆盖率", en: "CONSTRAINED RANDOM + COVERAGE", level: 3 },
+  "Assertions and Formal": { zh: "断言与形式验证", en: "Assertions and Formal", level: 3 },
+  "Verification Engineers": { zh: "验证工程师", en: "Verification Engineers", level: 3 },
+  "Simulation, Emulation, and FPGA Prototyping": { zh: "仿真、仿真器与 FPGA 原型", en: "Simulation, Emulation, and FPGA Prototyping", level: 2 },
+  "Simulation, Emulation, FPGA Prototyping": { zh: "仿真、仿真器与 FPGA 原型", en: "Simulation, Emulation, FPGA Prototyping", level: 2 },
+  "Simulation, Emulation, and FPGA Prototyping (Chinese)": { zh: "仿真、仿真（Emulation）、FPGA 原型", en: "Simulation, Emulation, and FPGA Prototyping", level: 2 },
+  "PPA": { zh: "PPA（性能、功耗、面积）", en: "PPA", level: 3 },
+  "Performance": { zh: "性能", en: "Performance", level: 2 },
+  "THE CORRELATION LOOP": { zh: "关联验证循环", en: "THE CORRELATION LOOP", level: 3 },
+  "WHY CORRELATION MATTERS": { zh: "为何关联验证重要", en: "WHY CORRELATION MATTERS", level: 3 },
+  "TIMING-DRIVEN PERFORMANCE": { zh: "时序驱动的性能", en: "TIMING-DRIVEN PERFORMANCE", level: 3 },
+  "TIMING CLOSURE": { zh: "时序收敛", en: "TIMING CLOSURE", level: 3 },
+  "SAND TO SILICON WAFER": { zh: "从沙到硅晶圆", en: "SAND TO SILICON WAFER", level: 3 },
+  "THE LAYER STACK": { zh: "金属层堆栈", en: "THE LAYER STACK", level: 3 },
+  "PDK AND GDSII": { zh: "PDK 与 GDSII", en: "PDK AND GDSII", level: 3 },
+  "WAFER FAB": { zh: "晶圆制造", en: "WAFER FAB", level: 3 },
   "Rules for Learning": { zh: "学习法则", en: "Rules for Learning", level: 2 },
   "Rules for Academics": { zh: "学业法则", en: "Rules for Academics", level: 2 },
 };
@@ -147,6 +180,7 @@ function slugify(value: string, index: number) {
 
 function normalise(markdown: string) {
   return markdown
+    .replace(/^[\s\S]*?(?=^(?:Principles of Computer Architecture|How To Design A Chip, From Scratch|How to Learn)\s*$)/m, "")
     .replace(/^Home Writing\s*\n+/, "")
     .replace(/^Contents\n[\s\S]*?(?=^# |^## |^### |^How to Learn$)/m, "")
     .replace(/^# (Principles of Computer Architecture|How To Design A Chip, From Scratch)\s*$/m, "")
@@ -164,7 +198,8 @@ function parseBlocks(markdown: string, language: Language): MarkdownBlock[] {
       headingIndex += 1;
       return { type: "heading", level, value, id: slugify(value, headingIndex) };
     }
-    const plainHeading = PLAIN_HEADINGS[section];
+    const headingKey = section.toLocaleLowerCase();
+    const plainHeading = Object.values(PLAIN_HEADINGS).find((candidate) => candidate.en.toLocaleLowerCase() === headingKey || candidate.zh === section);
     if (plainHeading) {
       headingIndex += 1;
       const value = plainHeading[language];

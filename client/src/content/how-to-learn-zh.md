@@ -12,14 +12,15 @@
 
 最后，多练，多练，多练。学到的知识只有在你应用它时才有用。
 
-Rules for Learning
-找到心流状态。
-使用主动回忆与间隔重复（active recall with spaced repetition）以保留信息。
-利用他人的成果。
-创建外部语义网络（知识库）。
-练习，练习，练习。
+学习法则
 
-Rules for Academics
+- 找到心流状态。
+- 使用主动回忆与间隔重复（active recall with spaced repetition）以保留信息。
+- 利用他人的成果。
+- 创建外部语义网络（知识库）。
+- 练习，练习，练习。
+
+学业法则
 
 这些经验可以应用到学术上。要在考试中取得高水平表现，请做到以下几点：
 
