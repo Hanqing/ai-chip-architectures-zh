@@ -2,10 +2,13 @@
  * 设计提醒：本文件严格复刻 jacobpeake.com/ai-chip-architectures 的文章骨架。
  * 不加入 Hero、卡片、阅读进度或自定义品牌装饰；以原站三栏栅格、粘性目录、衬线长文和原生主题切换为准。
  */
-import { Github, Linkedin, Mail, Moon, Sun } from "lucide-react";
+import { Github, Languages, Linkedin, Mail, Moon, Sun } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
+import DiagramOverlay from "@/components/DiagramOverlay";
+import articleMarkdownEn from "@/content/ai-chip-architectures-en.md?raw";
 import articleMarkdown from "@/content/ai-chip-architectures-zh.md?raw";
 import { useTheme } from "@/contexts/ThemeContext";
+import { glossary } from "@/lib/glossary";
 
 type TocItem = {
   id: string;
@@ -20,6 +23,8 @@ type FigureSpec = {
   alt: string;
   caption: string;
 };
+
+type Language = "zh" | "en";
 
 const ASSETS = {
   nvidia: "/manus-storage/nvidia-gpu-die_0861949d.png",
@@ -120,6 +125,29 @@ const figures: Record<string, Record<string, FigureSpec[]>> = {
   },
 };
 
+const diagramKeyBySrc: Record<string, string> = {
+  [ASSETS.nvidia]: "nvidia-gpu-die",
+  [ASSETS.nvidiaSm]: "nvidia-sm",
+  [ASSETS.nvidiaScaleUp]: "nvidia-scale-up",
+  [ASSETS.nvidiaScaleOut]: "nvidia-scale-out",
+  [ASSETS.tpu]: "google-tpu-chip",
+  [ASSETS.tpuCore]: "google-tpu-tensorcore",
+  [ASSETS.tpuScaleUp]: "google-tpu-scale-up",
+  [ASSETS.tpuScaleOut]: "google-tpu-scale-out",
+  [ASSETS.amd]: "amd-gpu-chip",
+  [ASSETS.amdCu]: "amd-cu",
+  [ASSETS.amdScaleUp]: "amd-scale-up",
+  [ASSETS.amdScaleOut]: "amd-scale-out",
+  [ASSETS.cerebras]: "cerebras-wafer-die",
+  [ASSETS.cerebrasCore]: "cerebras-core",
+  [ASSETS.trainium]: "aws-trainium-chip",
+  [ASSETS.trainiumCore]: "aws-trainium-neuroncore",
+  [ASSETS.trainiumScaleUp]: "aws-trainium-scale-up",
+  [ASSETS.trainiumScaleOut]: "aws-trainium-scale-out",
+  [ASSETS.groq]: "groq-chip",
+  [ASSETS.groqScale]: "groq-scale",
+};
+
 const chapterMap: Record<string, { id: string; label: string; logo: string; logoClass?: string }> = {
   "NVIDIA GPU": { id: "nvidia-gpu", label: "NVIDIA GPU", logo: BRAND_ASSETS.nvidia },
   "Google TPU": { id: "google-tpu", label: "Google TPU", logo: BRAND_ASSETS.google },
@@ -190,8 +218,22 @@ function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[character] ?? character));
 }
 
-function inlineMarkdown(value: string) {
-  return escapeHtml(value)
+function annotateTerms(value: string) {
+  const placeholders: string[] = [];
+  let annotated = value;
+  [...glossary].sort((a, b) => b.term.length - a.term.length).forEach((item) => {
+    const escaped = item.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    annotated = annotated.replace(new RegExp(escaped, "g"), () => {
+      const token = `@@GLOSSARY_${placeholders.length}@@`;
+      placeholders.push(`<span class="term" tabindex="0"><span class="term-label">${item.term}</span><span class="term-tooltip" role="tooltip"><b>${item.english}</b><span>${item.definition}</span></span></span>`);
+      return token;
+    });
+  });
+  return annotated.replace(/@@GLOSSARY_(\d+)@@/g, (_match, index) => placeholders[Number(index)] ?? "");
+}
+
+function inlineMarkdown(value: string, language: Language) {
+  const parsed = escapeHtml(value)
     .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*\*([^*]+)\*\*\*/g, "<strong><em>$1</em></strong>")
@@ -199,27 +241,38 @@ function inlineMarkdown(value: string) {
     .replace(/\*([^*]+)\*/g, "<em>$1</em>")
     .replace(/ {2}\n/g, "<br />")
     .replace(/\n/g, " ");
+  return language === "zh" ? annotateTerms(parsed) : parsed;
 }
 
-function cleanMarkdown(markdown: string) {
-  return markdown
+function cleanMarkdown(markdown: string, language: Language) {
+  const localized = markdown
     .replace(/^# .*Jacob Peake\s*\n+/m, "")
     .replace(/^\*\*链接:\*\*\s*https:\/\/www\.jacobpeake\.com\/ai-chip-architectures\s*\n\s*---\s*\n+/m, "")
     .replace(/^!\[[^\]]*\]\([^\n]*\)\s*$/gm, "")
-    .replace(/^问题所在$/m, "### 问题")
-    .replace(/^# 比较$/m, "### 比较")
-    .replace(/^# 这说明了什么$/m, "##### 这说明了什么")
-    .replace(/^每芯片$/m, "##### 每芯片")
-    .replace(/^每机架 \/ pod$/m, "##### 每机架 / pod")
-    .replace(/^# (计算|内存|数值表示|确定性|押注|扩展|软件)$/gm, "##### $1")
-    .replace(/^## (软件|扩展)$/gm, "#### $1")
+    .replace(/^[\s\S]*?^AI Chip Architectures\s*$/m, "## AI Chip Architectures");
+  const normalized = language === "zh"
+    ? localized
+      .replace(/^问题所在$/m, "### 问题")
+      .replace(/^# 比较$/m, "### 比较")
+      .replace(/^# 这说明了什么$/m, "##### 这说明了什么")
+      .replace(/^每芯片$/m, "##### 每芯片")
+      .replace(/^每机架 \/ pod$/m, "##### 每机架 / pod")
+      .replace(/^# (计算|内存|数值表示|确定性|押注|扩展|软件)$/gm, "##### $1")
+      .replace(/^## (软件|扩展)$/gm, "#### $1")
+    : localized
+      .replace(/^The Problem$/m, "### The Problem")
+      .replace(/^(NVIDIA GPU|Google TPU|AMD GPU|Cerebras WSE|AWS Trainium|Groq LPU)$/gm, "## $1")
+      .replace(/^(GENEALOGY|ARCHITECTURE|SCALING|SOFTWARE)$/gm, "### $1")
+      .replace(/^(Per-chip|Per-rack \/ pod|What this shows)$/gm, "##### $1");
+  return normalized
+    .replace(/([^\n])\n(#{2,5}\s+)/g, "$1\n\n$2")
     .replace(/^(#{2,5}\s+.+)\n(?!\n)/gm, "$1\n\n");
 }
 
 type ArticleBlock = { kind: "heading" | "paragraph" | "rule"; level?: number; text?: string };
 
-function parseBlocks(markdown: string): ArticleBlock[] {
-  return cleanMarkdown(markdown)
+function parseBlocks(markdown: string, language: Language): ArticleBlock[] {
+  return cleanMarkdown(markdown, language)
     .trim()
     .split(/\n{2,}/)
     .map((source) => source.trim())
@@ -239,19 +292,26 @@ function normalizeSubheading(text: string) {
   return "";
 }
 
-function Figure({ spec }: { spec: FigureSpec }) {
+function Figure({ spec, showChineseOverlay }: { spec: FigureSpec; showChineseOverlay: boolean }) {
+  const diagram = diagramKeyBySrc[spec.src];
   return (
     <figure className="architecture-figure" aria-label={spec.caption}>
-      <img src={spec.src} alt={spec.alt} loading="lazy" />
+      <div className="diagram-shell">
+        <img src={spec.src} alt={spec.alt} loading="lazy" />
+        {showChineseOverlay && diagram && <DiagramOverlay diagram={diagram} />}
+      </div>
     </figure>
   );
 }
 
-function ComparisonTable({ type }: { type: "chip" | "rack" }) {
+function ComparisonTable({ type, language }: { type: "chip" | "rack"; language: Language }) {
   const headers = type === "chip"
-    ? ["公司", "年份", "芯片", "加速器内存", "内存带宽", "旗舰密集 FLOPs", "TDP", "纵向扩展带宽"]
-    : ["公司", "年份", "系统", "芯片数量", "汇聚密集 FLOPs", "加速器内存总量", "纵向扩展互连带宽", "每芯片 NIC", "功耗", "散热"];
+    ? (language === "zh" ? ["公司", "年份", "芯片", "加速器内存", "内存带宽", "旗舰密集 FLOPs", "TDP", "纵向扩展带宽"] : ["Company", "Year", "Chip", "Accelerator memory", "Memory BW", "Flagship dense FLOPs", "TDP", "Scale-up BW"])
+    : (language === "zh" ? ["公司", "年份", "系统", "芯片数量", "汇聚密集 FLOPs", "加速器内存总量", "纵向扩展互连带宽", "每芯片 NIC", "功耗", "散热"] : ["Company", "Year", "System", "Chips", "Aggregate dense FLOPs", "Accelerator memory total", "Scale-up fabric BW", "Per-chip NIC", "Power", "Cooling"]);
   const rows = type === "chip" ? perChipRows : perRackRows;
+  const localizeCell = (cell: string) => language === "en"
+    ? cell.replace("液冷", "Liquid").replace("风冷", "Air").replace("无每芯片 NIC", "No per-chip NIC").replace("64 在役（已安装 72）", "64 active (72 installed)").replace("3D 环形网", "3D torus")
+    : cell;
   const spanFor = (index: number) => {
     const company = rows[index].company;
     if (index > 0 && rows[index - 1].company === company) return 0;
@@ -269,7 +329,7 @@ function ComparisonTable({ type }: { type: "chip" | "rack" }) {
             const span = spanFor(index);
             return <tr key={`${row.company}-${row.cells[1]}-${index}`}>
               {span > 0 && <td className="company" rowSpan={span}><img className={`company-logo ${meta.logoClass ?? ""}`} src={meta.logo} alt={meta.label} /></td>}
-              {row.cells.map((cell, cellIndex) => <td key={`${cellIndex}-${cell}`}>{cell}</td>)}
+              {row.cells.map((cell, cellIndex) => <td key={`${cellIndex}-${cell}`}>{localizeCell(cell)}</td>)}
             </tr>;
           })}
         </tbody>
@@ -278,18 +338,18 @@ function ComparisonTable({ type }: { type: "chip" | "rack" }) {
   );
 }
 
-function GenealogyRow({ source }: { source: string }) {
+function GenealogyRow({ source, language }: { source: string; language: Language }) {
   const lines = source.split("\n").map((line) => line.trim()).filter(Boolean);
   const [year, head = "", ...description] = lines;
   return (
     <div className="gen-row">
-      <div className="gen-head"><span className="gen-year">{year}</span><span>{inlineMarkdown(head).replace(/<[^>]+>/g, "")}</span></div>
-      {description.length > 0 && <div className="gen-desc">{inlineMarkdown(description.join(" ")).replace(/<[^>]+>/g, "")}</div>}
+      <div className="gen-head"><span className="gen-year">{year}</span><span>{inlineMarkdown(head, language).replace(/<[^>]+>/g, "")}</span></div>
+      {description.length > 0 && <div className="gen-desc">{inlineMarkdown(description.join(" "), language).replace(/<[^>]+>/g, "")}</div>}
     </div>
   );
 }
 
-function TocList({ activeSection, activeSub, compact = false }: { activeSection: string; activeSub: string; compact?: boolean }) {
+function TocList({ activeSection, activeSub, compact = false, language }: { activeSection: string; activeSub: string; compact?: boolean; language: Language }) {
   return (
     <ul className={compact ? "mobile-toc-list" : "sidebar-toc-list"}>
       {tocItems.map((item) => {
@@ -303,7 +363,7 @@ function TocList({ activeSection, activeSub, compact = false }: { activeSection:
             <ul className="sidebar-toc-sublist">
               {item.subitems.map((subitem) => (
                 <li className="sidebar-toc-subitem" key={subitem.id}>
-                  <a className={`sidebar-toc-sublink ${activeSub === subitem.id ? "current" : ""}`} href={`#${subitem.id}`}>{subitem.label}</a>
+                  <a className={`sidebar-toc-sublink ${activeSub === subitem.id ? "current" : ""}`} href={`#${subitem.id}`}>{language === "en" ? ({ architecture: "Architecture", scaling: "Scaling", software: "Software" }[subitem.id.split("-").at(-1) ?? ""] ?? subitem.label) : subitem.label}</a>
                 </li>
               ))}
             </ul>
@@ -311,14 +371,16 @@ function TocList({ activeSection, activeSub, compact = false }: { activeSection:
         );
       })}
       <li className="sidebar-toc-item">
-        <a className={`sidebar-toc-link comparison-link ${activeSection === "comparison" ? "current" : ""}`} href="#comparison">比较</a>
+        <a className={`sidebar-toc-link comparison-link ${activeSection === "comparison" ? "current" : ""}`} href="#comparison">{language === "en" ? "Comparison" : "比较"}</a>
       </li>
     </ul>
   );
 }
 
-function ArticleContent() {
-  const blocks = useMemo(() => parseBlocks(articleMarkdown).filter((block) => !(block.kind === "heading" && block.text === "AI 芯片架构")), []);
+function ArticleContent({ language }: { language: Language }) {
+  const source = language === "zh" ? articleMarkdown : articleMarkdownEn;
+  const title = language === "zh" ? "AI 芯片架构" : "AI Chip Architectures";
+  const blocks = useMemo(() => parseBlocks(source, language).filter((block) => !(block.kind === "heading" && (block.text === "AI 芯片架构" || block.text === "AI Chip Architectures"))), [source, language]);
   let currentChapter = "";
   let currentSub = "";
   let inGenealogy = false;
@@ -328,9 +390,9 @@ function ArticleContent() {
   return (
     <>
       <header className="article-header">
-        <h1 className="article-title">AI 芯片架构</h1>
+        <h1 className="article-title">{title}</h1>
       </header>
-      <article className="article-body" aria-label="AI 芯片架构中文文章">
+      <article className="article-body" aria-label={language === "zh" ? "AI 芯片架构中文文章" : "AI Chip Architectures article"}>
         {blocks.map((block, index) => {
         if (block.kind === "rule") return <hr key={`rule-${index}`} />;
         if (block.kind === "heading") {
@@ -342,9 +404,9 @@ function ArticleContent() {
             inGenealogy = false;
             return <h3 id={chapter.id} data-observe-id={chapter.id} key={`chapter-${chapter.id}`}><img className={`heading-logo ${chapter.logoClass ?? ""}`} src={chapter.logo} alt="" />{chapter.label}</h3>;
           }
-          if (text === "问题") return <h3 id="the-problem" data-observe-id="the-problem" key={`heading-${index}`}>问题</h3>;
-          if (text === "比较") { currentChapter = "comparison"; currentSub = ""; inGenealogy = false; return <h3 id="comparison" data-observe-id="comparison" key={`heading-${index}`}>比较</h3>; }
-          if (text === "谱系") { inGenealogy = true; return <h4 key={`genealogy-${index}`}>谱系</h4>; }
+          if (text === "问题" || text === "The Problem") return <h3 id="the-problem" data-observe-id="the-problem" key={`heading-${index}`}>{text}</h3>;
+          if (text === "比较" || text === "Comparison") { currentChapter = "comparison"; currentSub = ""; inGenealogy = false; return <h3 id="comparison" data-observe-id="comparison" key={`heading-${index}`}>{text}</h3>; }
+          if (text === "谱系" || text === "GENEALOGY") { inGenealogy = true; return <h4 key={`genealogy-${index}`}>{language === "zh" ? "谱系" : "GENEALOGY"}</h4>; }
           const subName = normalizeSubheading(text);
           if (subName && currentChapter && currentChapter !== "comparison") {
             currentSub = `${currentChapter.split("-")[0]}-${subName}`;
@@ -355,23 +417,23 @@ function ArticleContent() {
             return <h4 id={anchorIsNew ? currentSub : undefined} data-observe-id={anchorIsNew ? currentSub : undefined} key={`sub-${index}`}>{text.toUpperCase()}</h4>;
           }
           const HeadingTag = block.level && block.level >= 5 ? "h5" : "h4";
-          const slug = text === "每芯片" ? "per-chip" : text === "每机架 / pod" ? "per-rack-pod" : text === "这说明了什么" ? "what-this-shows" : undefined;
+          const slug = text === "每芯片" || text === "Per-chip" ? "per-chip" : text === "每机架 / pod" || text === "Per-rack / pod" ? "per-rack-pod" : text === "这说明了什么" || text === "What this shows" ? "what-this-shows" : undefined;
           return <HeadingTag id={slug} key={`heading-${index}`}>{text}</HeadingTag>;
         }
         const paragraph = block.text?.trim() ?? "";
-        if (paragraph.startsWith("公司\t年份\t芯片")) return <ComparisonTable key={`comparison-chip-${index}`} type="chip" />;
-        if (paragraph.startsWith("公司\t年份\t系统")) return <ComparisonTable key={`comparison-rack-${index}`} type="rack" />;
+        if (paragraph.startsWith("公司\t年份\t芯片") || paragraph.startsWith("Company\tYear\tChip")) return <ComparisonTable key={`comparison-chip-${index}`} type="chip" language={language} />;
+        if (paragraph.startsWith("公司\t年份\t系统") || paragraph.startsWith("Company\tYear\tSystem")) return <ComparisonTable key={`comparison-rack-${index}`} type="rack" language={language} />;
         if (inGenealogy && /^\d{4}\s*(?:\n|\s{2})/.test(paragraph)) {
           const rows = paragraph.split(/(?=^\d{4}\s*$)/m).map((row) => row.trim()).filter(Boolean);
-          return <div className="genealogy" key={`genealogy-block-${index}`}>{rows.map((row, rowIndex) => <GenealogyRow key={`genealogy-row-${index}-${rowIndex}`} source={row} />)}</div>;
+          return <div className="genealogy" key={`genealogy-block-${index}`}>{rows.map((row, rowIndex) => <GenealogyRow key={`genealogy-row-${index}-${rowIndex}`} source={row} language={language} />)}</div>;
         }
-        const output = <p key={`p-${index}`} dangerouslySetInnerHTML={{ __html: inlineMarkdown(paragraph) }} />;
+        const output = <p key={`p-${index}`} dangerouslySetInnerHTML={{ __html: inlineMarkdown(paragraph, language) }} />;
         if (currentChapter && currentSub && figures[currentChapter]?.[currentSub]) {
           const cursorKey = `${currentChapter}:${currentSub}`;
           const cursor = figureCursor[cursorKey] ?? 0;
           figureCursor[cursorKey] = cursor + 1;
           const insertFigure = figures[currentChapter][currentSub][cursor];
-          if (insertFigure) return <Fragment key={`figure-pair-${cursorKey}-${cursor}`}><p dangerouslySetInnerHTML={{ __html: inlineMarkdown(paragraph) }} /><Figure spec={insertFigure} /></Fragment>;
+          if (insertFigure) return <Fragment key={`figure-pair-${cursorKey}-${cursor}`}><p dangerouslySetInnerHTML={{ __html: inlineMarkdown(paragraph, language) }} /><Figure spec={insertFigure} showChineseOverlay={language === "zh"} /></Fragment>;
         }
         return output;
         })}
@@ -380,26 +442,28 @@ function ArticleContent() {
   );
 }
 
-function PostCta({ ending = false }: { ending?: boolean }) {
+function PostCta({ ending = false, language }: { ending?: boolean; language: Language }) {
   return (
     <div className={ending ? "post-cta post-cta-end" : "post-cta"}>
       <a className="post-cta-brand" href="https://standardmachines.com/" target="_blank" rel="noreferrer">
         <img className="post-cta-mark" src={ASSETS.standardMachines} alt="" />
         <span>Standard Machines</span>
       </a>
-      <p className="post-cta-body">用 AI 设计先进芯片。</p>
-      <a className="post-cta-contact" href="mailto:founders@standardmachines.com?subject=From%20your%20writing"><Mail size={12} />联系创始团队</a>
+      <p className="post-cta-body">{language === "zh" ? "用 AI 设计先进芯片。" : "Teaching AI to design advanced chips."}</p>
+      <a className="post-cta-contact" href="mailto:founders@standardmachines.com?subject=From%20your%20writing"><Mail size={12} />{language === "zh" ? "联系创始团队" : "Get in touch"}</a>
     </div>
   );
 }
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
+  const [language, setLanguage] = useState<Language>(() => window.localStorage.getItem("article-language") === "en" ? "en" : "zh");
   const [activeSection, setActiveSection] = useState("nvidia-gpu");
   const [activeSub, setActiveSub] = useState("");
 
   useEffect(() => {
-    document.title = "AI 芯片架构";
+    document.title = language === "zh" ? "AI 芯片架构" : "AI Chip Architectures";
+    document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
     const elements = Array.from(document.querySelectorAll<HTMLElement>("[data-observe-id]"));
     const observer = new IntersectionObserver((entries) => {
       const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
@@ -417,7 +481,20 @@ export default function Home() {
     }, { rootMargin: "-22% 0px -66% 0px", threshold: [0, 0.1] });
     elements.forEach((element) => observer.observe(element));
     return () => observer.disconnect();
-  }, []);
+  }, [language]);
+
+  const toggleLanguage = () => {
+    const anchor = window.location.hash;
+    const scrollY = window.scrollY;
+    const next = language === "zh" ? "en" : "zh";
+    window.localStorage.setItem("article-language", next);
+    setLanguage(next);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const target = anchor ? document.getElementById(anchor.slice(1)) : null;
+      if (target) target.scrollIntoView({ block: "start" });
+      else window.scrollTo({ top: scrollY });
+    }));
+  };
 
   return (
     <main className="page">
@@ -432,21 +509,22 @@ export default function Home() {
             <a href="https://www.linkedin.com/in/jacob-peake/" target="_blank" rel="noreferrer" aria-label="LinkedIn"><Linkedin /></a>
             <a href="https://x.com/jacobpeake" target="_blank" rel="noreferrer" aria-label="X"><span className="x-glyph">𝕏</span></a>
             <button type="button" aria-label="切换暗色模式" onClick={toggleTheme}>{theme === "dark" ? <Sun /> : <Moon />}</button>
+            <button className="language-toggle" type="button" aria-label={language === "zh" ? "切换至英文" : "切换至中文"} onClick={toggleLanguage}><Languages /><span>{language === "zh" ? "EN" : "中"}</span></button>
           </div>
           <div className="sidebar-toc">
             <div className="sidebar-toc-title">Contents</div>
-            <TocList activeSection={activeSection} activeSub={activeSub} />
+            <TocList activeSection={activeSection} activeSub={activeSub} language={language} />
           </div>
-          <PostCta />
+          <PostCta language={language} />
         </nav>
 
         <div className="content">
           <details className="mobile-toc">
             <summary>Contents</summary>
-            <TocList activeSection={activeSection} activeSub={activeSub} compact />
+            <TocList activeSection={activeSection} activeSub={activeSub} compact language={language} />
           </details>
-          <ArticleContent />
-          <PostCta ending />
+          <ArticleContent language={language} />
+          <PostCta ending language={language} />
         </div>
       </div>
     </main>
